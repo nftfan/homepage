@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,11 +22,12 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            max-width: 250px;
+            max-width: 450px;
             max-height: 900px;
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: #1e90ff #555;
+			
         }
         .bookmark-list::-webkit-scrollbar {
             width: 8px;
@@ -42,16 +44,18 @@
             align-items: center;
             padding: 5px;
             text-decoration: none;
-            color: #00ff00;
+            color: #ffffff;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
             margin-bottom: 10px;
             word-wrap: break-word;
+			
+			
         }
         .bookmark-list img {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            border-radius: 1px;
             margin-right: 10px;
         }
         .input-container {
@@ -78,7 +82,7 @@
             color: #aaa;
         }
         .input-title {
-            width: 80px;
+            width: 40px;
             padding: 5px;
             border: none;
             border-radius: 5px;
@@ -113,6 +117,7 @@
             text-align: left;
             font-family: 'Courier New', Courier, monospace;
             padding: 10px;
+			
         }
         .news {
             position: absolute;
@@ -129,6 +134,10 @@
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: #1e90ff #555;
+			background-color: #101010;
+           
+            border-radius: 5px;
+			 
         }
         .news::-webkit-scrollbar {
             width: 8px;
@@ -147,21 +156,36 @@
         .news li {
             margin-bottom: 10px;
         }
-        .notes-section {
+        .notes-container {
             position: absolute;
             bottom: 60px;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            width: 100%;
+            flex-direction: column;
+        }
+        .notes-input-box {
+            width: 300px;
+            padding: 5px;
+            border: none;
+            border-radius: 5px;
+            outline: none;
+            background-color: #555;
+            color: #fff;
+            font-size: 12px;
+            margin-bottom: 10px;
         }
         .notes-list {
-            max-width: 800px;
+            width: 1080px;
             max-height: 800px;
-            margin-bottom: 10px;
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: #1e90ff #555;
+            margin-bottom: 20px;
+            font-size: 12px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
         }
         .notes-list::-webkit-scrollbar {
             width: 8px;
@@ -173,28 +197,14 @@
             background-color: #1e90ff;
             border-radius: 10px;
         }
-        .note {
-            background-color: #333;
-            padding: 10px;
-            margin-bottom: 10px;
+        .note-item {
+            background-color: #444;
+            padding: 5px;
             border-radius: 5px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            word-wrap: break-word;
+            margin-bottom: 5px;
         }
-        .note-date {
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
-        }
-        .notes-input-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-        .notes-input-box {
-            width: 250px;
+        .search-box {
+            width: 200px;
             padding: 5px;
             border: none;
             border-radius: 5px;
@@ -202,25 +212,9 @@
             background-color: #555;
             color: #fff;
             font-size: 12px;
-            margin-right: 5px;
-        }
-        .notes-input-box::placeholder {
-            color: #aaa;
-        }
-        .notes-add-button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #1e90ff;
-            color: #fff;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .notes-add-button:hover {
-            background-color: #1c86ee;
+            margin-top: 10px;
         }
     </style>
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1002.0.min.js"></script>
 </head>
 <body>
     <div class="input-container">
@@ -230,16 +224,21 @@
     </div>
     <div class="clock" id="clock"></div>
     <div class="news" id="news">Loading latest news...</div>
-    <div class="bookmark-list" id="bookmark-list"></div>
-
-    <div class="notes-section">
-        <div class="notes-list" id="notes-list"></div>
-        <div class="notes-input-container">
-            <input type="text" class="notes-input-box" id="note-input" placeholder="Add a note">
-            <button class="notes-add-button" onclick="addNote()">Post</button>
-        </div>
+    <div class="bookmark-list" id="bookmark-list">
+       
     </div>
 
+    <div class="notes-container">
+        
+        <div class="notes-list" id="notes-list">
+            <!-- Notes will be displayed here -->
+        </div>
+        <input type="text" class="notes-input-box" id="note-text" placeholder="Add Note">
+        <button class="add-button" onclick="addNote()">Add Note</button>
+		<input type="text" class="search-box" id="search-notes" placeholder="Search Notes" oninput="searchNotes()">
+    </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1002.0.min.js"></script>
     <script>
         // Configure AWS SDK
         AWS.config.update({
@@ -249,12 +248,6 @@
 
         var dynamodb = new AWS.DynamoDB.DocumentClient();
         var tableName = 'solfan';
-
-        // Load bookmarks and notes from DynamoDB when the page loads
-        window.onload = function() {
-            loadBookmarks();
-            loadNotes();
-        };
 
         function addBookmark() {
             var url = document.getElementById('bookmark-url').value;
@@ -269,14 +262,17 @@
                 url = 'https://' + url;
             }
 
+            var bookmark = {
+                solfan: Date.now().toString(), // Primary key attribute
+                type: 'bookmark',
+                url: url,
+                title: customTitle || new URL(url).hostname.split('.')[0] + '.com',
+                favicon: 'https://www.google.com/s2/favicons?sz=64&domain_url=' + new URL(url).hostname
+            };
+
             var params = {
                 TableName: tableName,
-                Item: {
-                    solfan: 'BOOKMARK',
-                    SK: Date.now().toString(),
-                    url: url,
-                    title: customTitle || new URL(url).hostname
-                }
+                Item: bookmark
             };
 
             dynamodb.put(params, function(err, data) {
@@ -284,40 +280,71 @@
                     alert("Error adding bookmark to DynamoDB: " + err.message);
                 } else {
                     console.log("Successfully added bookmark to DynamoDB", data);
-                    loadBookmarks(); // Reload bookmarks after adding
+                    displayBookmark(bookmark);
+                    document.getElementById('bookmark-url').value = '';
+                    document.getElementById('bookmark-title').value = '';
                 }
             });
+        }
 
-            document.getElementById('bookmark-url').value = '';
-            document.getElementById('bookmark-title').value = '';
+        function displayBookmark(bookmark) {
+            var list = document.getElementById('bookmark-list');
+            var a = document.createElement('a');
+            a.href = bookmark.url;
+
+            var img = document.createElement('img');
+            img.src = bookmark.favicon;
+            img.alt = bookmark.url;
+            img.onerror = function() {
+                this.src = 'https://via.placeholder.com/20'; // Fallback icon
+            };
+
+            a.appendChild(img);
+            a.appendChild(document.createTextNode(bookmark.title));
+
+            list.appendChild(a);
+        }
+
+        function loadBookmarks() {
+            var params = {
+                TableName: tableName,
+                FilterExpression: "#type = :typeVal",
+                ExpressionAttributeNames: {
+                    "#type": "type"
+                },
+                ExpressionAttributeValues: {
+                    ":typeVal": "bookmark"
+                }
+            };
+
+            dynamodb.scan(params, function(err, data) {
+                if (err) {
+                    alert("Error loading bookmarks from DynamoDB: " + err.message);
+                } else {
+                    data.Items.forEach(function(bookmark) {
+                        displayBookmark(bookmark);
+                    });
+                }
+            });
         }
 
         function addNote() {
-            var noteInput = document.getElementById('note-input');
-            var noteText = noteInput.value;
+            var noteText = document.getElementById('note-text').value;
             if (!noteText) {
                 alert('Please enter a note');
                 return;
             }
 
-            var now = new Date();
-            var dateString = now.toLocaleString('default', {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            var note = {
+                solfan: Date.now().toString(), // Primary key attribute
+                type: 'note',
+                text: noteText,
+                date: new Date().toISOString()
+            };
 
             var params = {
                 TableName: tableName,
-                Item: {
-                    solfan: 'NOTE',
-                    SK: Date.now().toString(),
-                    content: noteText,
-                    date: dateString
-                }
+                Item: note
             };
 
             dynamodb.put(params, function(err, data) {
@@ -325,90 +352,72 @@
                     alert("Error adding note to DynamoDB: " + err.message);
                 } else {
                     console.log("Successfully added note to DynamoDB", data);
-                    loadNotes(); // Reload notes after adding
-                }
-            });
-
-            noteInput.value = '';
-        }
-
-        function loadBookmarks() {
-            var params = {
-                TableName: tableName,
-                KeyConditionExpression: "#pk = :pk",
-                ExpressionAttributeNames: {
-                    "#pk": "solfan"
-                },
-                ExpressionAttributeValues: {
-                    ":pk": "BOOKMARK"
-                }
-            };
-
-            dynamodb.query(params, function(err, data) {
-                if (err) {
-                    alert("Error loading bookmarks from DynamoDB: " + err.message);
-                } else {
-                    displayBookmarks(data.Items);
+                    displayNote(note);
+                    document.getElementById('note-text').value = '';
                 }
             });
         }
 
-        function displayBookmarks(bookmarks) {
-            var list = document.getElementById('bookmark-list');
-            list.innerHTML = ""; // Clear existing bookmarks
+        function displayNote(note) {
+            var list = document.getElementById('notes-list');
+            var div = document.createElement('div');
+            div.className = 'note-item';
+            div.innerHTML = makeLinksClickable(note.text);
+            list.appendChild(div);
+        }
 
-            bookmarks.forEach(function(bookmark) {
-                var a = document.createElement('a');
-                a.href = bookmark.url;
+        function makeLinksClickable(text) {
+    var urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, function(url) {
+        return '<a href="' + url + '" target="_blank" style="color: #ffd55f;">' + url + '</a>';
+    });
 
-                var img = document.createElement('img');
-                var faviconUrl = 'https://www.google.com/s2/favicons?sz=64&domain_url=' + new URL(bookmark.url).hostname;
-                img.src = faviconUrl;
-                img.alt = bookmark.url;
-                img.onerror = function() {
-                    this.src = 'https://via.placeholder.com/20'; // Fallback icon
-                };
-
-                a.appendChild(img);
-                a.appendChild(document.createTextNode(bookmark.title));
-
-                list.appendChild(a);
-            });
         }
 
         function loadNotes() {
             var params = {
                 TableName: tableName,
-                KeyConditionExpression: "#pk = :pk",
+                FilterExpression: "#type = :typeVal",
                 ExpressionAttributeNames: {
-                    "#pk": "solfan"
+                    "#type": "type"
                 },
                 ExpressionAttributeValues: {
-                    ":pk": "NOTE"
+                    ":typeVal": "note"
                 }
             };
 
-            dynamodb.query(params, function(err, data) {
+            dynamodb.scan(params, function(err, data) {
                 if (err) {
                     alert("Error loading notes from DynamoDB: " + err.message);
                 } else {
-                    displayNotes(data.Items);
+                    var sortedNotes = data.Items.sort(function(a, b) {
+                        return new Date(a.date) - new Date(b.date);
+                    });
+                    sortedNotes.forEach(function(note) {
+                        displayNote(note);
+                    });
                 }
             });
         }
 
-        function displayNotes(notes) {
+        function searchNotes() {
+            var searchText = document.getElementById('search-notes').value.toLowerCase();
             var notesList = document.getElementById('notes-list');
-            notesList.innerHTML = ""; // Clear existing notes
-
-            notes.forEach(function(note) {
-                var noteDiv = document.createElement('div');
-                noteDiv.className = 'note';
-                noteDiv.innerHTML = '<div>' + note.content + '</div><div class="note-date">' + note.date + '</div>';
-
-                notesList.appendChild(noteDiv);
-            });
+            var notes = notesList.getElementsByClassName('note-item');
+            for (var i = 0; i < notes.length; i++) {
+                var note = notes[i];
+                if (note.textContent.toLowerCase().includes(searchText)) {
+                    note.style.display = 'block';
+                } else {
+                    note.style.display = 'none';
+                }
+            }
         }
+
+        window.onload = function() {
+            loadBookmarks();
+            loadNotes();
+        };
 
         function updateClock() {
             var now = new Date();
